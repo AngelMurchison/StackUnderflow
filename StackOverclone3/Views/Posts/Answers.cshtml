@@ -1,0 +1,24 @@
+﻿@model StackOverclone3.Models.PostsAnswersViewmodel
+
+@{
+    ViewBag.Title = "Answers";
+}
+
+<h4>@Model.post.User.Email</h4>
+<h2>@Model.post.title</h2>
+<div>@Model.post.body</div>
+@foreach (var answer in Model.answers)
+{
+    @answer.user.Email
+    @answer.body
+}
+
+<div>
+    @using (Html.BeginForm())
+    {
+        @Html.AntiForgeryToken()
+        <input id="newAnswer" name="newAnswer" type="text" />
+        <input id="postId" name="postId" type="hidden" value="@Model.post.ID" />
+        <input type="submit" value="Submit" class="btn btn-default" />
+    }
+</div>

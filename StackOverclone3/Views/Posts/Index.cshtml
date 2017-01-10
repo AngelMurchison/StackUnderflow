@@ -1,0 +1,143 @@
+﻿@model IEnumerable<StackOverclone3.Models.Posts>
+
+@{
+    ViewBag.Title = "Index";
+}
+
+<h2>Index</h2>
+@{if (User.Identity.IsAuthenticated)
+    {
+        <p>
+            @Html.ActionLink("Create New", "Create")
+        </p>
+    }
+}
+
+<table class="table">
+    <tr>
+        <th>
+            @Html.DisplayName("Votes")
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.User.Email)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.title)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.body)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.topicTag)
+        </th>
+        <th></th>
+    </tr>
+
+    @foreach (var item in Model)
+    {
+        <tr>
+            @{
+                var upVotedClass = "";
+                var downVotedClass = "";
+                if (User.Identity.IsAuthenticated)
+                {
+                    var userVote = item.Votes.SingleOrDefault(w => w.UserId == ViewBag.UserId);
+                    if (userVote != null)
+                    {
+                        if (userVote.Weight == StackOverclone3.Models.VoteWeight.upvote)
+                        {
+                            upVotedClass = "upVoted";
+                        }
+                        else if (userVote.Weight == StackOverclone3.Models.VoteWeight.downvote)
+                        {
+                            downVotedClass = "downVoted";
+                        }
+                    }
+                }
+
+            }
+            <td>
+                <div><button class="up-button-for-@item.ID @upVotedClass" onclick="voteClick('@item.ID', '1')" @(User.Identity.IsAuthenticated ? "" : "disabled='disabled'") A><i class="glyphicon glyphicon-chevron-up"></i></button></div>
+                <div id="countFor-@item.ID">@item.VoteSum</div>
+                <div><button class="down-button-for-@item.ID @downVotedClass" onclick="voteClick('@item.ID', '-1')" @(User.Identity.IsAuthenticated ? "" : "disabled='disabled'")><i class="glyphicon glyphicon-chevron-down"></i></button></div>
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.User.Email)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.title)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.body)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.topicTag)
+            </td>
+            <td>
+                @Html.ActionLink("Answers", "Answers", new { id = item.ID })
+            </td>
+        </tr>
+                }
+</table>
+@section scripts{
+    <script>
+        var colorButtonsForPost = function (postId, value) {
+            var upButton = '.up-button-for-' + postId;
+            var downButton = '.down-button-for-' + postId;
+            if (value == "up") {
+                $(upButton).addClass("upVoted");
+                $(downButton).removeClass("downVoted");
+            }
+            else if (value == "down") {
+                $(upButton).removeClass("upVoted");
+                $(downButton).addClass("downVoted");
+            }
+            else {
+                $(upButton).removeClass("upVoted");
+                $(downButton).removeClass("downVoted");
+            }
+        }
+
+        var updateCounter = function (newCount, id) {
+            var itemToUpdate = "#countFor-" + id;
+            $(itemToUpdate).html(newCount);
+        }
+        var voteClick = function (id, value) {
+            console.log("Voting:" + value + "for" + id);
+            // ajax call
+            var json = {
+                PostId: id,
+                Vote: value
+            }
+            var route = "/api/votes/".concat(id, "/", (value == 1) ? "up" : "down");
+            // var r = "/api/vote" + id + "/" + (value == 1) ? "up" : "down";
+            $.ajax({
+                type: 'POST',
+                url: route,
+                data: JSON.stringify(json),
+                success: function (data) {
+                    if (data.Message) {
+                        alert(data.Message);
+                    }
+                    // disable the upvote button for this item
+                    var newCount = data.NewCount;
+                    var value = "noVote";
+                    if (data.Vote) {
+                        if (data.Vote == 1) {
+                            value = "up";
+                        } else if (data.Vote == -1) {
+                            value = "down";
+                        }
+
+                    }
+                    colorButtonsForPost(id, value);
+                    updateCounter(newCount, id);
+                },
+                contentType: "application/json",
+                dataType: 'json'
+            });
+        }
+
+
+    </script>
+}
